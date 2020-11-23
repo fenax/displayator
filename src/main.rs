@@ -3,6 +3,8 @@ use piston_window::*;
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
 
+
+
 #[derive(Serialize, Deserialize)]
 enum Visible{
     ImageFile(String),
@@ -26,8 +28,22 @@ fn main() {
         //.opengl(OpenGL::V2_1) // Set a different OpenGl version
         .build()
         .unwrap();
+
+    println!("{}",serde_json::to_string(&Command::Clear).unwrap());
+    println!("{}",serde_json::to_string(&Command::Show).unwrap());
+    println!("{}",serde_json::to_string(&Command::Display(Visible::ImageFile("Filename.fil".to_owned()))).unwrap());
+    println!("{}",serde_json::to_string(&Command::Display(Visible::Text("The text.".to_owned()))).unwrap());
+
+    
+
     let mut texture_context = window.create_texture_context();
     let mut loaded_image = Texture::empty(& mut texture_context).unwrap();
+
+    let mut child = std::process::Command::new("./start.sh").stdout(std::process::Stdio::piped())
+                                                            .stdin(std::process::Stdio::piped())
+                                                            .spawn().expect("failed to launch child process");
+    let mut to_child = child.stdin.take().unwrap();
+    let mut from_child = nonblock::NonBlockingReader::from_fd( child.stdout.take().unwrap()).unwrap();
 
     window.set_lazy(true);
 
@@ -37,8 +53,22 @@ fn main() {
             image(&loaded_image,c.transform,g);
         });
 
-        if let Some(Button::Keyboard(Key::A)) = e.press_args() {
+        let mut buf = Vec::new();
+        let red = from_child.read_available(&mut buf);
+        match red {
+            Ok(x) => {
+                if x>0 {
+                    let command :Command = serde_json::from_slice(&buf).unwrap();
+                    match command{
+                        Command::Clear => println!("Clearing"),
+                        Command::Show  => println!("Showing"),
+                        Command::Display(Visible::ImageFile(file))=> println!("displaying file {}",file),
+                        Command::Display(Visible::Text(text))=>      println!("printing {}",text),
+                    }
+                } 
 
+            },
+            _ => panic!("aaaaaaa !"),
         }
 
         if let Some(Button::Keyboard(Key::S)) = e.press_args() {

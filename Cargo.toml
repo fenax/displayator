@@ -12,3 +12,5 @@ serde_json = "1.0"
 piston_window = "0.116.0"
 find_folder = "0.3.0"
 image = "0.23.0"
+
+nonblock = "*"

@@ -47,24 +47,30 @@ fn main() {
 
     window.set_lazy(true);
 
+    let mut remainder:std::vec::Vec<u8>  = Vec::new();
     while let Some(e) = window.next() {
         window.draw_2d(&e, |c, g, _| {
             clear([0.8, 0.8, 0.8, 1.0], g);
             image(&loaded_image,c.transform,g);
         });
 
-        let mut buf = Vec::new();
+        let mut buf :std::vec::Vec<u8> = Vec::new();
         let red = from_child.read_available(&mut buf);
         match red {
             Ok(x) => {
                 if x>0 {
-                    let command :Command = serde_json::from_slice(&buf).unwrap();
-                    match command{
-                        Command::Clear => println!("Clearing"),
-                        Command::Show  => println!("Showing"),
-                        Command::Display(Visible::ImageFile(file))=> println!("displaying file {}",file),
-                        Command::Display(Visible::Text(text))=>      println!("printing {}",text),
+                    let workbuffer = vec![remainder.as_slice(),buf.as_slice()].concat();
+                    let commands:std::vec::Vec<&[u8]> = workbuffer.split(|x| *x == ('\n' as u8)).collect();
+                    for i in 0..commands.len()-1{
+                        let command :Command = serde_json::from_slice(commands[i]).unwrap();
+                        match command{
+                            Command::Clear => println!("Clearing"),
+                            Command::Show  => println!("Showing"),
+                            Command::Display(Visible::ImageFile(file))=> println!("displaying file {}",file),
+                            Command::Display(Visible::Text(text))=>      println!("printing {}",text),
+                        }                        
                     }
+                    remainder = commands[commands.len()-1].to_vec();
                 } 
 
             },

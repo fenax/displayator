@@ -22,7 +22,7 @@ enum Command{
 fn main() {
     let mut window: PistonWindow = WindowSettings::new(
             "piston: hello_world",
-            [200, 200]
+            [900, 900]
         )
         .exit_on_esc(true)
         //.opengl(OpenGL::V2_1) // Set a different OpenGl version
@@ -45,14 +45,11 @@ fn main() {
     let mut to_child = child.stdin.take().unwrap();
     let mut from_child = nonblock::NonBlockingReader::from_fd( child.stdout.take().unwrap()).unwrap();
 
-    window.set_lazy(true);
+//    window.set_lazy(true);
 
     let mut remainder:std::vec::Vec<u8>  = Vec::new();
     while let Some(e) = window.next() {
-        window.draw_2d(&e, |c, g, _| {
-            clear([0.8, 0.8, 0.8, 1.0], g);
-            image(&loaded_image,c.transform,g);
-        });
+
 
         let mut buf :std::vec::Vec<u8> = Vec::new();
         let red = from_child.read_available(&mut buf);
@@ -66,7 +63,10 @@ fn main() {
                         match command{
                             Command::Clear => println!("Clearing"),
                             Command::Show  => println!("Showing"),
-                            Command::Display(Visible::ImageFile(file))=> println!("displaying file {}",file),
+                            Command::Display(Visible::ImageFile(file))=> {
+                                println!("displaying file {}",file);
+                                loaded_image = Texture::from_path(&mut texture_context, file, Flip::None, &TextureSettings::new()).unwrap();
+                            },
                             Command::Display(Visible::Text(text))=>      println!("printing {}",text),
                         }                        
                     }
@@ -76,9 +76,9 @@ fn main() {
             },
             _ => panic!("aaaaaaa !"),
         }
-
-        if let Some(Button::Keyboard(Key::S)) = e.press_args() {
-
-        }
+        window.draw_2d(&e, |c, g, _| {
+            clear([0.8, 0.8, 0.8, 1.0], g);
+            image(&loaded_image,c.transform,g);
+        });
     }
 }
